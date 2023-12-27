@@ -8,7 +8,6 @@ import { User } from '../models';
 import { Router } from 'express';
 import { verify } from 'jsonwebtoken';
 import { SECRET } from '../constants';
-import { randomBytes } from 'crypto';
 import { userAuth } from '../middlewares/auth-guard';
 import Validator from '../middlewares/validator-middleware';
 import {
