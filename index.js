@@ -5,10 +5,10 @@ import mongoose from 'mongoose';
 import { json } from 'body-parser';
 
 // Import Application Constants
-import { DB, PORT } from './constants';
+import { DB, PORT } from './src/constants';
 
 // Router imports
-import userApis from './apis/users';
+import userApis from './src/apis/users';
 
 // Initialize express application
 const app = express();
@@ -20,20 +20,18 @@ app.use(json());
 // Inject Sub router and apis
 app.use('/api', userApis);
 
-const main = async () => {
-  try {
-    // Connect with the database
-    await mongoose.connect(DB, {
-      useNewUrlParser: true,
-      useFindAndModify: false,
-      useUnifiedTopology: true,
-    });
+// Connect with the database
+mongoose
+  .connect(DB, {
+    useNewUrlParser: true,
+    useFindAndModify: false,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
     consola.success('DATABASE CONNECTED...');
     // Start application listening for request on server
     app.listen(PORT, () => consola.success(`Sever started on port ${PORT}`));
-  } catch (err) {
+  })
+  .catch((err) => {
     consola.error(`Unable to start the server \n${err.message}`);
-  }
-};
-
-main();
+  });
