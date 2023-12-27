@@ -2,23 +2,26 @@ import {
   ResetPassword,
   RegisterValidations,
   AuthenticateValidations,
-} from '../validators';
-import { join } from 'path';
-import { User } from '../models';
-import { Router } from 'express';
-import { verify } from 'jsonwebtoken';
-import { SECRET } from '../constants';
-import { userAuth } from '../middlewares/auth-guard';
-import Validator from '../middlewares/validator-middleware';
+} from '../validators/user-validators.js';
+import path from 'path';
+import User from '../models/User.js';
+import express from 'express';
+import jsonwebtoken from 'jsonwebtoken';
+import { userAuth } from '../middlewares/auth-guard.js';
+import Validator from '../middlewares/validator-middleware.js';
 import {
   sendGmailSMTP,
   sendGmailPasswordResetToken,
   sendGmailPasswordReset,
-} from '../functions/nodemailer_sendmail';
-import { generateRandomNumbers } from '../functions/random';
+} from '../functions/nodemailer_sendmail.js';
+import { generateRandomNumbers } from '../functions/random.js';
+import dotenv from 'dotenv';
 
-const router = Router();
+dotenv.config();
 
+const router = express.Router();
+
+const SECRET = process.env.APP_SECRET;
 /**
  * @description To create a new User Accounts
  * @api /users/api/register
@@ -30,8 +33,10 @@ router.post(
   RegisterValidations,
   Validator,
   async (req, res) => {
+    console.log('we got here');
     try {
       let { email } = req.body;
+      console.log(email);
       let user = await User.findOne({ email });
       if (user) {
         return res.status(400).json({
@@ -83,7 +88,7 @@ router.post('/admin/verify-otp', async (req, res) => {
         message: 'Unauthorized access. Invalid verification code..',
       });
     }
-    const decodedData = verify(user.token, SECRET);
+    const decodedData = jsonwebtoken.verify(user.token, SECRET);
     user.token = undefined;
     user.verificationCode = undefined;
     user.verified = true;
@@ -155,6 +160,7 @@ router.post(
       let { email, password } = req.body;
 
       let user = await User.findOne({ email });
+
       if (!user) {
         return res.status(404).json({
           success: false,
@@ -167,6 +173,7 @@ router.post(
           message: 'Incorrect password.',
         });
       }
+
       let token = await user.generateJWT();
       return res.status(200).json({
         success: true,
@@ -266,9 +273,11 @@ router.get('/reset-password-now/:resetPasswordToken', async (req, res) => {
         message: 'Password reset token is invalid or has expired.',
       });
     }
-    return res.sendFile(join(__dirname, '../templates/password-reset.html'));
+    return res.sendFile(
+      path.join(__dirname, '../templates/password-reset.html')
+    );
   } catch (err) {
-    return res.sendFile(join(__dirname, '../templates/errors.html'));
+    return res.sendFile(path.join(__dirname, '../templates/errors.html'));
   }
 });
 

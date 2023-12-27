@@ -1,11 +1,13 @@
-import { Schema, model } from 'mongoose';
-import { compare, hash } from 'bcryptjs';
-import { SECRET } from '../constants';
+import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
 import { randomBytes } from 'crypto';
-import { sign } from 'jsonwebtoken';
-import { pick } from 'lodash';
+import jsonwebtoken from 'jsonwebtoken';
+import lodash from 'lodash';
+import dotenv from 'dotenv';
 
-const UserSchema = new Schema(
+dotenv.config();
+const SECRET = process.env.APP_SECRET;
+const UserSchema = new mongoose.Schema(
   {
     firstname: {
       type: String,
@@ -50,12 +52,12 @@ const UserSchema = new Schema(
 UserSchema.pre('save', async function (next) {
   let user = this;
   if (!user.isModified('password')) return next();
-  user.password = await hash(user.password, 10);
+  user.password = await bcrypt.hash(user.password, 10);
   next();
 });
 
 UserSchema.methods.comparePassword = async function (password) {
-  return await compare(password, this.password);
+  return await bcrypt.compare(password, this.password);
 };
 
 UserSchema.methods.generateOTPJWT = async function () {
@@ -67,8 +69,9 @@ UserSchema.methods.generateOTPJWT = async function () {
     verificationCode: this.verificationCode,
   };
 
-  return await sign(payload, SECRET, { expiresIn: 15 * 60 });
+  return await jsonwebtoken.sign(payload, SECRET, { expiresIn: 15 * 60 });
 };
+
 UserSchema.methods.generateJWT = async function () {
   let payload = {
     firstname: this.firstname,
@@ -76,7 +79,8 @@ UserSchema.methods.generateJWT = async function () {
     lastname: this.lastname,
     id: this._id,
   };
-  return await sign(payload, SECRET, { expiresIn: '1 day' });
+  console.log({ SECRET });
+  return await jsonwebtoken.sign(payload, SECRET, { expiresIn: '1 day' });
 };
 
 UserSchema.methods.generatePasswordReset = function () {
@@ -85,8 +89,14 @@ UserSchema.methods.generatePasswordReset = function () {
 };
 
 UserSchema.methods.getUserInfo = function () {
-  return pick(this, ['_id', 'firstname', 'email', 'lastname', 'verified']);
+  return lodash.pick(this, [
+    '_id',
+    'firstname',
+    'email',
+    'lastname',
+    'verified',
+  ]);
 };
 
-const User = model('users', UserSchema);
+const User = mongoose.model('users', UserSchema);
 export default User;

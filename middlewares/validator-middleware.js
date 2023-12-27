@@ -1,6 +1,6 @@
 import { validationResult } from 'express-validator';
 
-const validationMiddleware = (req, res, next) => {
+const Validator = (req, res, next) => {
   let errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -10,4 +10,4 @@ const validationMiddleware = (req, res, next) => {
   next();
 };
 
-export default validationMiddleware;
+export default Validator;

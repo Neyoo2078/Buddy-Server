@@ -2,24 +2,27 @@ import cors from 'cors';
 import consola from 'consola';
 import express from 'express';
 import mongoose from 'mongoose';
-import { json } from 'body-parser';
+import bodyParser from 'body-parser';
+import dotenv from 'dotenv';
 
 // Import Application Constants
-import { DB, PORT } from './src/constants';
 
 // Router imports
-import userApis from './src/apis/users';
+import userApis from './apis/users.js';
 
 // Initialize express application
 const app = express();
 
+dotenv.config();
 // Apply Application Middlewares
 app.use(cors());
-app.use(json());
+app.use(bodyParser.json());
 
 // Inject Sub router and apis
 app.use('/api', userApis);
 
+const DB = process.env.APP_DB;
+const PORT = process.env.PORT || process.env.APP_PORT;
 // Connect with the database
 mongoose
   .connect(DB, {

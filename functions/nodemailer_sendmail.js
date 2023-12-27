@@ -1,6 +1,9 @@
 import nodemailer from 'nodemailer';
-import { DOMAIN } from '../constants';
+import dotenv from 'dotenv';
 
+dotenv.config();
+
+const DOMAIN = process.env.APP_DOMAIN;
 export const sendGmailSMTP = async (user) => {
   console.log({ user, DOMAIN });
   const transporter = nodemailer.createTransport({
