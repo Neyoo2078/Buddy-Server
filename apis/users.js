@@ -33,12 +33,11 @@ router.post(
   RegisterValidations,
   Validator,
   async (req, res) => {
-    console.log('we got here');
     try {
       let { email } = req.body;
-      console.log(email);
+
       let user = await User.findOne({ email });
-      if (user) {
+      if (user && user.verified) {
         return res.status(400).json({
           success: false,
           message:
@@ -46,6 +45,22 @@ router.post(
         });
       }
       const otp = generateRandomNumbers();
+
+      if (user && !user.verified) {
+        user.verificationCode = otp;
+        user = await user.save();
+        const token = await user.generateOTPJWT();
+
+        user.token = token;
+        user = await user.save();
+
+        await sendGmailSMTP(user);
+        return res.status(201).json({
+          email: user.email,
+          success: true,
+          message: 'User Exist, Verify Email ',
+        });
+      }
 
       user = new User({
         ...req.body,
@@ -167,6 +182,13 @@ router.post(
           message: 'Username not found.',
         });
       }
+      if (user && !user.verified) {
+        await User.findOneAndDelete({ email });
+        return res.status(404).json({
+          success: false,
+          message: 'Username not found',
+        });
+      }
       if (!(await user.comparePassword(password))) {
         return res.status(401).json({
           success: false,
@@ -224,21 +246,6 @@ router.put(
       }
       user.generatePasswordReset();
       await user.save();
-      // Sent the password reset Link in the email.
-      // let html = `
-      //   <div>
-      //       <h1>Hello, ${user.username}</h1>
-      //       <p>Please click the following link to reset your password.</p>
-      //       <p>If this password reset request is not created by your then you can inore this email.</p>
-      //       <a href="${DOMAIN}users/reset-password-now/${user.resetPasswordToken}">Verify Now</a>
-      //   </div>
-      // `;
-      // await sendMail(
-      //   user.email,
-      //   'Reset Password',
-      //   'Please reset your password.',
-      //   html
-      // );
 
       await sendGmailPasswordResetToken(user);
       return res.status(404).json({
